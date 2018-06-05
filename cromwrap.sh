@@ -306,7 +306,7 @@ info "Argument checking finished"
 
 # -- Check value of VERBOSITY LEVEL 
 
-if [ ${VERBOSITY} -gt 4 ] || [ ${VERBOSITY} -lt 0 ]
+if [ ${VERBOSITY} -gt 4 ] || [ ${VERBOSITY} -lt 1 ]
 then
   error "\"${VERBOSITY}\" is not a correct value for verbosity level !"
   echo " "
