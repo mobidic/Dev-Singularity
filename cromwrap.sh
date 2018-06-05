@@ -5,11 +5,28 @@
 # Bash wrapper to launch wdl workflow from SINGULARITY 
 #
 # By Nicolas SOIRAT - nicolas.soirat@etu.umontpellier.fr
-#           Version 0.0.1
+#           Version 0.0.2
 #
 ###########################################################
-
+#     MoBiDiC
 # ---------------------------------------------------------
+
+###########################################################
+# Global 
+###########################################################
+
+RED='\033[0;31m'
+LIGHTRED='\033[1;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+VERSION="0.0.2"
+
+# -- Script log 
+
+VERBOSITY=1
+#exec 3>&2
 
 ###########################################################
 # Help 
@@ -26,6 +43,10 @@ help() {
   echo "Optional arguments : "
   echo "        -c | --conf <file.conf> : If you want to use Database for Cromwell for example"
   echo "        -o | --option <options.json> : File to add in the command if you have specific options for cromwell"
+  echo "        -l | --log <log leve> : log level [DEBUG, INFO, WARNING, ERROR, CRITICAL] (default INFO)"
+  echo " "
+  echo "        -s | --setlevel <integer> : decrease or increase verbosity level (ERROR : 1 | WARNING : 2 | INFO [default] : 3 | DEBUG : 4)"
+  echo "        -l | --logfile <file> : redirect logging to FILE instead of STDERR"
   echo " "
   echo "General arguments : "
   echo "        -h | --help : show this help message"
@@ -37,30 +58,32 @@ help() {
 # Log
 ###########################################################
 
-#logsetup () {
-#
-#  echo $(date)
-#
-#  case $1 in 
-#
-#    debug)
-#
-#      ;;
-#
-#    info)
-#      ;;
-#
-#    warning)
-#      ;;
-#
-#    error)
-#      ;;
-#
-#    critical)
-#      ;;
-#
-#  esac
-#}
+# -- Log variables 
+
+ERROR=1
+WARNING=2
+INFO=3
+DEBUG=4
+
+# -- Log functions 
+
+error() { log ${ERROR} "${RED}ERROR${NC} : $1" ; }
+warning() { log ${WARNING} "${YELLOW}WARNING${NC} : $1" ; }
+info() { log ${INFO} "${BLUE}INFO${NC} : $1" ; }
+debug() { log ${DEBUG} "${LIGHTRED}DEBUG${NC} : $1" ; }
+
+# -- Print log 
+
+echoerr() { echo -e "$@" 1>&2 ; }
+
+log() {
+
+  if [ ${VERBOSITY} -ge $1 ]
+  then
+    #DATE= date +'%Y-%m-%d %H:%M:%S'
+    echoerr "[`date +'%Y-%m-%d %H:%M:%S'`] - CromWrap version : ${VERSION} - $2"
+  fi
+}
 
 ###########################################################
 # Extracting arguments ... 
@@ -79,6 +102,7 @@ INPUTSCOUNTER=0
 OPTIONCOUNTER=0
 CROMCOUNTER=0
 WORKFLOWCOUNTER=0
+VERBOSITYCOUNTER=0
 
 # -- Extraction 
 
@@ -88,32 +112,43 @@ do
     -c | --conf) shift
       CONFFILE=$1
       ((CONFCOUNTER++))
-      #echo "CONF COUNTER=${CONFCOUNTER}"
+      debug "CONF COUNTER=${CONFCOUNTER}"
       ;;
 
     -i | --input) shift 
       INPUTSFILE=$1
       ((INPUTSCOUNTER++))
-      #echo "INPUT COUNTER=${INPUTSCOUNTER}"
+      debug "INPUT COUNTER=${INPUTSCOUNTER}"
       ;;
     
     -o | --option) shift
       OPTIONFILE=$1
       ((OPTIONCOUNTER++))
-      #echo "OPTION COUNTER=${OPTIONCOUNTER}"
+      debug "OPTION COUNTER=${OPTIONCOUNTER}"
       ;;
 
     -e | --exec) shift 
       CROMWELLFILE=$1
       ((CROMCOUNTER++))
-      #echo "CROMCOUNTER=${CROMCOUNTER}"
+      debug "CROMCOUNTER=${CROMCOUNTER}"
       ;;
     
     -w | --wdl) shift 
       WORKFLOWFILE=$1
       ((WORKFLOWCOUNTER++))
-      #echo "WF COUNTER=${WORKFLOWCOUNTER}"
+      debug "WF COUNTER=${WORKFLOWCOUNTER}"
       ;;
+
+    -s | -setlog) shift 
+      VERBOSITY=$1
+      ((VERBOSITYCOUNTER++))
+      debug "VERBOSITYCOUNTER=${VERBOSITYCOUNTER}"
+      ;;
+
+    #TO DO
+#    -l | --logfile) shift 
+#      exec 3>>$OPTARG 
+#      ;;
 
     -h | --help)
       help 
@@ -129,19 +164,22 @@ do
   shift 
 done 
 
-# -- TEST 
+# -- DEBUG 
 
-#echo "CONF = ${CONFFILE}"
-#echo "INPUT = ${INPUTSFILE}"
-#echo "OPTION = ${OPTIONFILE}"
-#echo "CROM = ${CROMWELLFILE}"
-#echo "WF = ${WORKFLOWFILE}"
+debug "CONF = ${CONFFILE}"
+debug "INPUT = ${INPUTSFILE}"
+debug "OPTION = ${OPTIONFILE}"
+debug "CROM = ${CROMWELLFILE}"
+debug "WF = ${WORKFLOWFILE}"
+
 
 ################################################@##########
 # Variable checking
 ###########################################################
 
 # -- Check if there isn't more than one file for each option 
+
+info "Argument checking..."
 
 if [ ${CONFCOUNTER} -gt 1 ]
 then 
@@ -152,128 +190,154 @@ fi
 
 if [ ${INPUTSCOUNTER} -ne 1 ]
 then 
-  echo "You have to use only one input file !"
+  error "You have to use only one input file !"
   echo " "
   help 
 fi 
 
 if [ ${OPTIONCOUNTER} -gt 1 ]
 then 
-  echo "Can't use more than one option file !"
+  error "Can't use more than one option file !"
   echo " "
   help 
 fi
 
 if [ ${CROMCOUNTER} -ne 1 ]
 then 
-  echo "Please enter only one path to cromwell.jar  !"
+  error "Please enter only one path to cromwell.jar  !"
   echo " "
   help 
 fi 
 
 if [ ${WORKFLOWCOUNTER} -ne 1 ]
 then 
-  echo "You have to select ONE workflow file"
+  error "You have to select ONE workflow file !"
   echo " "
   help 
 fi 
 
+if [ ${VERBOSITYCOUNTER} -gt 1 ]
+then 
+  error "You have to use only one time -s option !"
+  echo " "
+  help 
+fi 
+
+info "Arguments per option : OK !"
 
 # -- Check if files exist 
 
 if [ ! -f ${CONFFILE} ]
 then 
-  echo "\"${CONFFILE}\" does not exist !"
+  error "\"${CONFFILE}\" does not exist !"
   echo " "
   help 
 fi 
 
 if [ ! -f ${INPUTSFILE} ]
 then
-  echo "\"${INPUTSFILE}\" file does not exist !"
+  error "\"${INPUTSFILE}\" file does not exist !"
   echo " "
   help 
 fi 
 
 if [ ! -f ${OPTIONFILE} ]
 then 
-  echo "\"${OPTIONFILE}\" does not exist !"
+  error "\"${OPTIONFILE}\" does not exist !"
   echo " "
   help 
 fi
 
 if [ ! -f  ${CROMWELLFILE} ]
 then 
-  echo "\"${CROMWELLFILE}\" is not valid !"
+  error "\"${CROMWELLFILE}\" is not valid !"
   echo " "
   help 
 fi 
 
 if [ ! -f ${WORKFLOWFILE} ]
 then 
-  echo "\"${WORKFLOWFILE}\" does not exist !"
+  error "\"${WORKFLOWFILE}\" does not exist !"
   echo " "
   help 
 fi
+
+info "Files exist !"
 
 # -- Check file extensions
 
 if [[ ${CONFCOUNTER} -eq 1 && ${CONFFILE##*\.} != "conf" ]]
 then 
-  echo "\"${CONFFILE}\" must be .conf file !"
+  error "\"${CONFFILE}\" must be .conf file !"
   echo " "
   help 
 fi 
 
 if [ ${INPUTSFILE##*_} != "inputs.json" ]
 then
-  echo "\"${INPUTSFILE}\" must be _inputs.json file !"
+  error "\"${INPUTSFILE}\" must be _inputs.json file !"
   echo " "
   help 
 fi 
 
 if [[ ${OPTIONCOUNTER} -eq 1 && ${OPTIONFILE##*\.} !=  "json" ]]
 then 
-  echo "\"${OPTIONFILE}\" must be .json file !"
+  error "\"${OPTIONFILE}\" must be .json file !"
   echo " "
   help 
 fi
 
 if [ ${CROMWELLFILE##*\.} != "jar" ]
 then 
-  echo "\"${CROMWELLFILE}\" must be .jar file !"
+  error "\"${CROMWELLFILE}\" must be .jar file !"
   echo " "
   help  
 fi 
 
 if [ ${WORKFLOWFILE##*\.} != "wdl" ]
 then 
-  echo "\"${WORKFLOWFILE}\" must be .wdl file !"
+  error "\"${WORKFLOWFILE}\" must be .wdl file !"
   echo " "
   help 
 fi 
 
+info "File extension : OK !"
+info "Argument checking finished"
 
+# -- Check value of VERBOSITY LEVEL 
+
+if [ ${VERBOSITY} -gt 4 ] || [ ${VERBOSITY} -lt 0 ]
+then
+  error "\"${VERBOSITY}\" is not a correct value for verbosity level !"
+  echo " "
+  help 
+fi
 
 ###########################################################
 # Launching WDL command ... 
 ###########################################################
 
 # -- Preparation 
+
 if [ ${CONFCOUNTER} -eq 1 ]
 then 
   CONF="-Dconfig.file=${CONFFILE}"
+else
+  warning "CromWrap will launch cromwell command without configuration file !"
 fi
 
 if [ ${OPTIONCOUNTER} -eq 1 ]
 then 
   OPTION="-o ${OPTIONFILE}"
+else
+  warning "CromWrap will launch cromwell command without option file !"
 fi 
 
 # -- Start
 
+info "Launching wdl command ..."
 echo "java ${CONF} -jar ${CROMWELLFILE} run ${WORKFLOWFILE} -i ${INPUTSFILE} ${OPTION}"
-
+info "... Done !"
 
 ###########################################################
 # TRASH 
