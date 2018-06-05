@@ -25,7 +25,7 @@ VERSION="0.0.2"
 
 # -- Script log 
 
-VERBOSITY=1
+VERBOSITY=4
 #exec 3>&2
 
 ###########################################################
@@ -45,8 +45,7 @@ help() {
   echo "        -o | --option <options.json> : File to add in the command if you have specific options for cromwell"
   echo "        -l | --log <log leve> : log level [DEBUG, INFO, WARNING, ERROR, CRITICAL] (default INFO)"
   echo " "
-  echo "        -s | --setlevel <integer> : decrease or increase verbosity level (ERROR : 1 | WARNING : 2 | INFO [default] : 3 | DEBUG : 4)"
-  echo "        -l | --logfile <file> : redirect logging to FILE instead of STDERR"
+  echo "        -v | --verbosity <integer> : decrease or increase verbosity level (ERROR : 1 | WARNING : 2 | INFO [default] : 3 | DEBUG : 4)"
   echo " "
   echo "General arguments : "
   echo "        -h | --help : show this help message"
@@ -112,43 +111,32 @@ do
     -c | --conf) shift
       CONFFILE=$1
       ((CONFCOUNTER++))
-      debug "CONF COUNTER=${CONFCOUNTER}"
       ;;
 
     -i | --input) shift 
       INPUTSFILE=$1
       ((INPUTSCOUNTER++))
-      debug "INPUT COUNTER=${INPUTSCOUNTER}"
       ;;
     
     -o | --option) shift
       OPTIONFILE=$1
       ((OPTIONCOUNTER++))
-      debug "OPTION COUNTER=${OPTIONCOUNTER}"
       ;;
 
     -e | --exec) shift 
       CROMWELLFILE=$1
       ((CROMCOUNTER++))
-      debug "CROMCOUNTER=${CROMCOUNTER}"
       ;;
     
     -w | --wdl) shift 
       WORKFLOWFILE=$1
       ((WORKFLOWCOUNTER++))
-      debug "WF COUNTER=${WORKFLOWCOUNTER}"
       ;;
 
-    -s | -setlog) shift 
+    -v | --verbosity) shift 
       VERBOSITY=$1
       ((VERBOSITYCOUNTER++))
-      debug "VERBOSITYCOUNTER=${VERBOSITYCOUNTER}"
       ;;
-
-    #TO DO
-#    -l | --logfile) shift 
-#      exec 3>>$OPTARG 
-#      ;;
 
     -h | --help)
       help 
@@ -165,7 +153,12 @@ do
 done 
 
 # -- DEBUG 
-
+debug "CONF COUNTER=${CONFCOUNTER}"
+debug "INPUT COUNTER=${INPUTSCOUNTER}"
+debug "CROMCOUNTER=${CROMCOUNTER}"
+debug "OPTION COUNTER=${OPTIONCOUNTER}"
+debug "WF COUNTER=${WORKFLOWCOUNTER}"
+debug "VERBOSITYCOUNTER=${VERBOSITYCOUNTER}"
 debug "CONF = ${CONFFILE}"
 debug "INPUT = ${INPUTSFILE}"
 debug "OPTION = ${OPTIONFILE}"
