@@ -5,7 +5,7 @@
 # Bash wrapper to launch wdl workflow from SINGULARITY 
 #
 # By Nicolas SOIRAT - nicolas.soirat@etu.umontpellier.fr
-#           Version 0.0.2
+#           Version 0.0.3
 #
 ###########################################################
 #     MoBiDiC
@@ -21,11 +21,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-VERSION="0.0.2"
+VERSION="0.0.3"
 
 # -- Script log 
 
-VERBOSITY=4
+VERBOSITY=3
 #exec 3>&2
 
 ###########################################################
@@ -43,8 +43,6 @@ help() {
   echo "Optional arguments : "
   echo "        -c | --conf <file.conf> : If you want to use Database for Cromwell for example"
   echo "        -o | --option <options.json> : File to add in the command if you have specific options for cromwell"
-  echo "        -l | --log <log leve> : log level [DEBUG, INFO, WARNING, ERROR, CRITICAL] (default INFO)"
-  echo " "
   echo "        -v | --verbosity <integer> : decrease or increase verbosity level (ERROR : 1 | WARNING : 2 | INFO [default] : 3 | DEBUG : 4)"
   echo " "
   echo "General arguments : "
@@ -134,9 +132,17 @@ do
       ;;
 
     -v | --verbosity) shift 
-      VERBOSITY=$1
-      ((VERBOSITYCOUNTER++))
-      ;;
+      # Check if verbosity level argument is an integer before assignment 
+      if ! [[ "$1" =~ ^[0-9]+$ ]]
+      then 
+        error "\"$1\" must be an integer !"
+        echo " "
+        help 
+      else 
+        VERBOSITY=$1
+        ((VERBOSITYCOUNTER++))
+      fi 
+        ;;
 
     -h | --help)
       help 
@@ -306,6 +312,7 @@ then
   help 
 fi
 
+
 ###########################################################
 # Launching WDL command ... 
 ###########################################################
@@ -329,29 +336,5 @@ fi
 # -- Start
 
 info "Launching wdl command ..."
-echo "java ${CONF} -jar ${CROMWELLFILE} run ${WORKFLOWFILE} -i ${INPUTSFILE} ${OPTION}"
+java ${CONF} -jar ${CROMWELLFILE} run ${WORKFLOWFILE} -i ${INPUTSFILE} ${OPTION}
 info "... Done !"
-
-###########################################################
-# TRASH 
-###########################################################
-
-
-#if [ ${CONFCOUNTER} == 1 ]
-#then 
-#  if [ ${OPTIONCOUNTER} == 1 ]
-#  then 
-#    echo "java -Dconfig.file=${CONFFILE} -jar ${CROMWELLFILE} run ${WORKFLOWFILE} -i ${INPUTSFILE} -o ${OPTIONFILE}"
-#  elif [ ${OPTIONCOUNTER} == 0 ]
-#  then 
-#    echo "java -Dconfig.file=${CONFFILE} -jar ${CROMWELLFILE} run ${WORKFLOWFILE} -i ${INPUTSFILE}"
-#  else 
-#    echo "Can't use more than one configuration file !"
-#  fi 
-
-#elif [ ${CONFCOUNTER} == 0 ]
-#then 
-#  if [ ${OPTIONCOUNTER} == 1 ]
-#  then 
-#    echo "java ${DECONF} -jar ${CROMWELLFILE} run ${WORKFLOWFILE} -i ${INPUTSFILE} -o ${OPTIONFILE}"
-#  elif [ ${OPTIONCOUNTER} == 0 ]
